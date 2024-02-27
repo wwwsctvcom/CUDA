@@ -91,7 +91,7 @@ void sum_matrix_cpu(float *MatA, float *MatB, float *MatC, int nx, int ny)
         for (int i = 0; i < nx; i++) {
             C[i] = A[i] + B[i];
         }
-        // remove pointer to next row
+        // move pointer to next row
         A += nx;
         B += nx;
         C += nx;
