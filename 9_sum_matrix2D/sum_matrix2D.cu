@@ -111,74 +111,74 @@ __global__ void sum_matrix_2d_gpu(float *MatA, float *MatB, float *MatC, int nx,
 
 int main(int argc, char** argv)
 {
-  inital_device(0);
+    inital_device(0);
+    
+    int nx = 1<<12;
+    int ny = 1<<12;
+    int nxy = nx * ny;
+    int nBytes = nxy * sizeof(float);
 
-  int nx = 1<<12;
-  int ny = 1<<12;
-  int nxy = nx * ny;
-  int nBytes = nxy * sizeof(float);
+    // CPU malloc
+    float* A_host = (float *)malloc(nBytes);
+    float* B_host = (float *)malloc(nBytes);
+    float* C_host = (float *)malloc(nBytes);
+    float* C_from_gpu = (float *)malloc(nBytes);
 
-  // CPU malloc
-  float* A_host = (float *)malloc(nBytes);
-  float* B_host = (float *)malloc(nBytes);
-  float* C_host = (float *)malloc(nBytes);
-  float* C_from_gpu = (float *)malloc(nBytes);
+    initial_data(A_host, nxy);
+    initial_data(B_host, nxy);
 
-  initial_data(A_host, nxy);
-  initial_data(B_host, nxy);
+    // cudaMalloc
+    float *A_dev = NULL;
+    float *B_dev = NULL;
+    float *C_dev = NULL;
 
-  // cudaMalloc
-  float *A_dev = NULL;
-  float *B_dev = NULL;
-  float *C_dev = NULL;
-
-  CHECK(cudaMalloc((void**)&A_dev, nBytes));
-  CHECK(cudaMalloc((void**)&B_dev, nBytes));
-  CHECK(cudaMalloc((void**)&C_dev, nBytes));
+    CHECK(cudaMalloc((void**)&A_dev, nBytes));
+    CHECK(cudaMalloc((void**)&B_dev, nBytes));
+    CHECK(cudaMalloc((void**)&C_dev, nBytes));
 
 
-  CHECK(cudaMemcpy(A_dev, A_host, nBytes, cudaMemcpyHostToDevice));
-  CHECK(cudaMemcpy(B_dev, B_host, nBytes, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(A_dev, A_host, nBytes, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(B_dev, B_host, nBytes, cudaMemcpyHostToDevice));
 
-  // CPU calculate
-  cudaMemcpy(C_from_gpu, C_dev, nBytes, cudaMemcpyDeviceToHost);
-  double iStart = cpu_second();
-  sum_matrix_2d_cpu(A_host, B_host, C_host, nx, ny);
-  double iElaps = cpu_second() - iStart;
-  printf("CPU Execution Time elapsed %f sec\n", iElaps);
+    // CPU calculate
+    cudaMemcpy(C_from_gpu, C_dev, nBytes, cudaMemcpyDeviceToHost);
+    double iStart = cpu_second();
+    sum_matrix_2d_cpu(A_host, B_host, C_host, nx, ny);
+    double iElaps = cpu_second() - iStart;
+    printf("CPU Execution Time elapsed %f sec\n", iElaps);
 
-  // GPU calculate
-  int dimx=32;
-  int dimy=32;
+    // GPU calculate
+    int dimx=32;
+    int dimy=32;
 
-  dim3 block_0(dimx, dimy);
-  dim3 grid_0((nx - 1) / block_0.x + 1,(ny - 1) / block_0.y + 1);
+    dim3 block_0(dimx, dimy);
+    dim3 grid_0((nx - 1) / block_0.x + 1,(ny - 1) / block_0.y + 1);
 
-  iStart = cpu_second();
-  sum_matrix_2d_gpu<<<grid_0, block_0>>>(A_dev, B_dev, C_dev, nx, ny);
-  CHECK(cudaDeviceSynchronize());
-  iElaps = cpu_second() - iStart;
-  printf("GPU Execution configuration<<<(%d, %d), (%d, %d)>>> Time elapsed %f sec\n", 
-          grid_0.x, grid_0.y, block_0.x, block_0.y, iElaps);
-  CHECK(cudaMemcpy(C_from_gpu, C_dev, nBytes, cudaMemcpyDeviceToHost));
+    iStart = cpu_second();
+    sum_matrix_2d_gpu<<<grid_0, block_0>>>(A_dev, B_dev, C_dev, nx, ny);
+    CHECK(cudaDeviceSynchronize());
+    iElaps = cpu_second() - iStart;
+    printf("GPU Execution configuration<<<(%d, %d), (%d, %d)>>> Time elapsed %f sec\n", 
+            grid_0.x, grid_0.y, block_0.x, block_0.y, iElaps);
+    CHECK(cudaMemcpy(C_from_gpu, C_dev, nBytes, cudaMemcpyDeviceToHost));
 
-  // check GPU result 
-  if (check_result(C_host, C_from_gpu, nxy) == 1) {
+    // check GPU result 
+    if (check_result(C_host, C_from_gpu, nxy) == 1) {
     printf("PASS\n");
-  } else {
+    } else {
     printf("FAILED\n");
-  }
+    }
 
-  // free 
-  cudaFree(A_dev);
-  cudaFree(B_dev);
-  cudaFree(C_dev);
+    // free 
+    cudaFree(A_dev);
+    cudaFree(B_dev);
+    cudaFree(C_dev);
 
-  free(A_host);
-  free(B_host);
-  free(C_host);
-  free(C_from_gpu);
+    free(A_host);
+    free(B_host);
+    free(C_host);
+    free(C_from_gpu);
 
-  cudaDeviceReset();
-  return 0;
+    cudaDeviceReset();
+    return 0;
 }

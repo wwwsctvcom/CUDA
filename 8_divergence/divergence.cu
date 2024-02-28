@@ -119,7 +119,7 @@ __global__ void kernel_use_warp(float *data)
 
 int main(int argc, char **argv)
 {
-	inital_device(0);
+    inital_device(0);
 
     double iStart, iElaps;
 	int size = 64;
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 	dim3 block(blocksize, 1);
 	dim3 grid((size - 1) / block.x + 1, 1);
 	printf("Execution Configure (block %d grid %d)\n", block.x, grid.x);
-
+    
     // malloc
 	float * C_dev;
 	size_t nBytes = size * sizeof(float);
@@ -146,14 +146,14 @@ int main(int argc, char **argv)
 	iElaps = cpu_second() - iStart;
 	printf("warmup	       <<<%d, %d>>>, elapsed %lf sec\n", grid.x, block.x, iElaps);
 	
-	//run kernel_no_warp
+    //run kernel_no_warp
 	iStart = cpu_second();
 	kernel_no_warp<<<grid, block>>>(C_dev);
 	cudaDeviceSynchronize();
 	iElaps = cpu_second() - iStart;
 	printf("kernel_no_warp <<<%d, %d>>>, elapsed %lf sec\n", grid.x, block.x, iElaps);
 
-	//run kernel_use_warp
+    //run kernel_use_warp
 	iStart = cpu_second();
 	kernel_use_warp<<<grid, block>>>(C_dev);
 	cudaDeviceSynchronize();
